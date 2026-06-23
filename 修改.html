@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>沙漠探險 Desert Adventure</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&family=Noto+Sans+TC:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ── TOKENS ─────────────────────────────────── */
+:root {
+  --gold:       #c9963a;
+  --gold-light: #e8c06a;
+  --gold-dim:   rgba(201,150,58,0.18);
+  --sand:       #f2e0bc;
+  --sand-pale:  #fdf6e8;
+  --dusk:       #1e0f04;
+  --dusk-mid:   #3a1e08;
+  --dusk-soft:  #5c3318;
+  --text-on-dark: #f0ddb8;
+  --text-muted:   #9a7450;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --shadow-card: 0 4px 28px rgba(0,0,0,0.45), 0 1px 6px rgba(0,0,0,0.3);
+  --shadow-lift: 0 8px 40px rgba(0,0,0,0.55);
+}
+
+/* ── RESET ──────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+/* ── BODY / BG ──────────────────────────────── */
+body {
+  font-family: 'Noto Sans TC', sans-serif;
+  min-height: 100vh;
+  background: #0e0602;
+  color: var(--text-on-dark);
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Layered desert-sky background */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse 120% 60% at 50% 0%,   #2a0e04 0%, transparent 70%),
+    radial-gradient(ellipse 80%  50% at 15% 100%,  #4a2208 0%, transparent 60%),
+    radial-gradient(ellipse 80%  50% at 85% 100%,  #3d1a06 0%, transparent 60%),
+    linear-gradient(175deg, #0e0602 0%, #1e0b03 30%, #321505 60%, #1a0802 100%);
+  pointer-events: none;
+}
+
+/* Star-dust texture overlay */
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background-image:
+    radial-gradient(1px 1px at 15%  20%, rgba(255,220,150,0.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 40%  8%,  rgba(255,220,150,0.25) 0%, transparent 100%),
+    radial-gradient(1px 1px at 72%  15%, rgba(255,220,150,0.3)  0%, transparent 100%),
+    radial-gradient(1px 1px at 90%  35%, rgba(255,220,150,0.2)  0%, transparent 100%),
+    radial-gradient(2px 2px at 55%  5%,  rgba(255,230,170,0.4)  0%, transparent 100%);
+  pointer-events: none;
+}
+
+#app {
+  position: relative; z-index: 1;
+  max-width: 1020px; margin: 0 auto;
+  padding: 20px 16px 40px;
+}
+
+/* ── TYPOGRAPHY HELPERS ─────────────────────── */
+.serif { font-family: 'Noto Serif TC', serif; }
+
+/* ── SETUP SCREEN ───────────────────────────── */
+#setup-screen {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 56px 20px 40px;
+  animation: fadeUp 0.6s ease both;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Hero title */
+.hero {
+  text-align: center; margin-bottom: 36px;
+}
+.hero-eyebrow {
+  font-size: 0.72rem; letter-spacing: 0.45em; color: var(--gold);
+  text-transform: uppercase; opacity: 0.75; margin-bottom: 12px;
+}
+.hero-title {
+  font-family: 'Noto Serif TC', serif;
+  font-size: clamp(2.8rem, 8vw, 4.4rem);
+  font-weight: 700; line-height: 1;
+  color: transparent;
+  background: linear-gradient(160deg, #f0d090 20%, #d4a040 50%, #f5d878 80%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  letter-spacing: 0.1em;
+  filter: drop-shadow(0 2px 24px rgba(200,140,30,0.35));
+}
+.hero-subtitle {
+  font-size: 0.82rem; letter-spacing: 0.28em; color: var(--gold-light);
+  margin-top: 10px; opacity: 0.6;
+}
+
+/* Divider */
+.divider {
+  width: 120px; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  margin: 24px auto;
+  opacity: 0.5;
+}
+
+.game-desc {
+  max-width: 500px; margin: 0 0 36px;
+  font-size: 0.85rem; line-height: 1.9;
+  color: rgba(240,220,180,0.65);
+  text-align: center;
+}
+
+/* Setup card */
+.setup-card {
+  background: linear-gradient(160deg, rgba(50,25,8,0.9) 0%, rgba(35,15,4,0.95) 100%);
+  border: 1px solid rgba(201,150,58,0.28);
+  border-radius: var(--radius-lg);
+  padding: 32px 36px;
+  width: 100%; max-width: 460px;
+  box-shadow: var(--shadow-card), inset 0 1px 0 rgba(255,210,100,0.08);
+  backdrop-filter: blur(12px);
+}
+.setup-card-title {
+  font-family: 'Noto Serif TC', serif;
+  font-size: 1rem; color: var(--gold-light);
+  margin-bottom: 22px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(201,150,58,0.2);
+  letter-spacing: 0.06em;
+}
+
+.form-row { margin-bottom: 18px; }
+.form-row label {
+  display: block; font-size: 0.72rem;
+  color: var(--text-muted); margin-bottom: 7px;
+  letter-spacing: 0.08em; font-weight: 500;
+}
+.form-row input,
+.form-row select {
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(255,240,210,0.06);
+  border: 1px solid rgba(201,150,58,0.25);
+  border-radius: var(--radius-sm);
+  color: var(--text-on-dark);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 0.88rem;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+.form-row input::placeholder { color: rgba(180,140,80,0.4); }
+.form-row input:focus,
+.form-row select:focus {
+  border-color: var(--gold);
+  background: rgba(255,240,210,0.1);
+}
+.form-row select option { background: #2a1206; }
+
+.player-inputs { margin: 4px 0 8px; }
+.player-row {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 12px;
+}
+.player-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+
+/* ── BUTTONS ────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 11px 26px; border-radius: var(--radius-sm);
+  border: none; cursor: pointer;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 0.88rem; font-weight: 600;
+  letter-spacing: 0.04em;
+  transition: all 0.18s cubic-bezier(.4,0,.2,1);
+  user-select: none; position: relative; overflow: hidden;
+}
+.btn::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 100%);
+  pointer-events: none;
+}
+.btn-primary {
+  background: linear-gradient(160deg, #d4a43c 0%, #b8831e 100%);
+  color: #1a0a00;
+  box-shadow: 0 3px 14px rgba(180,120,20,0.45), inset 0 1px 0 rgba(255,220,100,0.3);
+}
+.btn-primary:hover {
+  background: linear-gradient(160deg, #e0b44a 0%, #c89028 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 22px rgba(180,120,20,0.55);
+}
+.btn-primary:active { transform: translateY(0); }
+
+/* Large dice button */
+.btn-dice {
+  width: 100%;
+  padding: 15px 20px;
+  border-radius: var(--radius-md);
+  border: none; cursor: pointer;
+  font-family: 'Noto Serif TC', serif;
+  font-size: 1rem; font-weight: 600;
+  letter-spacing: 0.1em; color: #1a0800;
+  background: linear-gradient(155deg, #e8c060 0%, #c07818 50%, #d4a030 100%);
+  box-shadow: 0 4px 20px rgba(180,110,10,0.5), inset 0 1px 0 rgba(255,230,120,0.4);
+  transition: all 0.2s cubic-bezier(.4,0,.2,1);
+  position: relative; overflow: hidden;
+}
+.btn-dice::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 50%);
+  pointer-events: none;
+}
+.btn-dice:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 32px rgba(180,110,10,0.6);
+  background: linear-gradient(155deg, #f0cc70 0%, #d08828 50%, #e0b040 100%);
+}
+.btn-dice:active:not(:disabled) { transform: translateY(-1px); }
+.btn-dice:disabled {
+  opacity: 0.35; cursor: not-allowed;
+  filter: grayscale(0.5);
+  transform: none;
+}
+
+/* ── GAME SCREEN ────────────────────────────── */
+#game-screen { display: none; animation: fadeUp 0.4s ease both; }
+
+.game-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 18px; padding: 12px 20px;
+  background: rgba(15,7,2,0.7);
+  border: 1px solid rgba(201,150,58,0.18);
+  border-radius: var(--radius-md);
+  backdrop-filter: blur(10px);
+}
+.game-header .title {
+  font-family: 'Noto Serif TC', serif;
+  font-size: 1rem; color: var(--gold-light);
+  letter-spacing: 0.14em;
+}
+.round-badge {
+  font-size: 0.72rem; color: var(--gold);
+  background: rgba(201,150,58,0.12);
+  border: 1px solid rgba(201,150,58,0.25);
+  padding: 4px 12px; border-radius: 20px;
+  letter-spacing: 0.08em;
+}
+
+.game-layout {
+  display: grid;
+  grid-template-columns: 1fr 290px;
+  gap: 16px;
+  align-items: start;
+}
+
+/* ── BOARD ──────────────────────────────────── */
+.board-wrap {
+  background: linear-gradient(145deg, #fdf4e0 0%, #f8eccc 100%);
+  border-radius: var(--radius-lg);
+  border: 3px solid rgba(180,130,50,0.6);
+  padding: 7px;
+  box-shadow: var(--shadow-lift),
+              inset 0 1px 0 rgba(255,230,150,0.5),
+              0 0 0 1px rgba(100,50,10,0.3);
+  position: relative;
+}
+.board-wrap::before {
+  content: '';
+  position: absolute; inset: 3px;
+  border-radius: calc(var(--radius-lg) - 2px);
+  background: transparent;
+  border: 1px solid rgba(180,130,50,0.2);
+  pointer-events: none;
+}
+
+.board-grid {
+  display: grid;
+  grid-template-columns: 70px repeat(6, 1fr) 70px;
+  grid-template-rows: 70px repeat(4, 1fr) 70px;
+  gap: 4px;
+  width: 100%;
+  aspect-ratio: 8/6;
+}
+
+/* Cell base */
+.cell {
+  border-radius: 6px;
+  border: 1px solid rgba(160,110,40,0.3);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 3px 2px; position: relative;
+  overflow: hidden;
+  transition: box-shadow 0.18s, transform 0.18s;
+  cursor: default;
+}
+.cell::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, transparent 55%);
+  pointer-events: none; border-radius: inherit;
+}
+
+.cell.active-cell {
+  box-shadow: 0 0 0 2.5px #d4a030, 0 0 12px rgba(212,160,48,0.5);
+  z-index: 3;
+  transform: scale(1.03);
+}
+
+.cell-num {
+  font-size: 0.72rem;
+  color: rgba(100,60,20,0.4);
+  position: absolute; top: 3px; left: 4px;
+  font-weight: 700; line-height: 1;
+}
+.cell-emoji { font-size: 1.25rem; line-height: 1; }
+.cell-name {
+  font-size: 0.52rem;
+  color: rgba(60,30,8,0.75);
+  text-align: center;
+  font-weight: 600;
+  line-height: 1.25;
+  margin-top: 2px;
+  letter-spacing: 0.01em;
+}
+.cell-side-left  { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 0.5rem; }
+.cell-side-right { writing-mode: vertical-rl; font-size: 0.5rem; }
+
+.cell-players {
+  display: flex; flex-wrap: wrap;
+  justify-content: center; gap: 1px;
+  margin-top: 2px; position: relative; z-index: 1;
+}
+.cell-player-dot {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.9);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.46rem; color: white; font-weight: 700;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+}
+
+/* Cell type colours – warm pastel palette */
+.ct-oasis   { background: linear-gradient(145deg, #b8f0cc 0%, #ddfaec 100%); border-color: #5ab87a; }
+.ct-bandit  { background: linear-gradient(145deg, #fcc8c8 0%, #fdeaea 100%); border-color: #d07070; }
+.ct-blank   { background: linear-gradient(145deg, #fdf7e8 0%, #fff9f0 100%); border-color: rgba(180,130,50,0.25); }
+.ct-dune    { background: linear-gradient(145deg, #edd8a0 0%, #f8eecc 100%); border-color: #c09840; }
+.ct-path    { background: linear-gradient(145deg, #b8deff 0%, #e0f2ff 100%); border-color: #68b0e0; }
+.ct-mirage  { background: linear-gradient(145deg, #ddc8f8 0%, #f4ecff 100%); border-color: #9878d0; }
+.ct-merchant{ background: linear-gradient(145deg, #fff0a0 0%, #fffae8 100%); border-color: #c8a020; }
+.ct-oil     { background: linear-gradient(145deg, #b8eed8 0%, #e4f8f0 100%); border-color: #50b088; }
+
+/* Board center */
+.board-center {
+  grid-column: 2 / 8;
+  grid-row: 2 / 6;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-start;
+  padding: 8px 8px 6px;
+}
+
+/* ── Desert center scene ── */
+.board-center-bg{
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(circle at 50% 20%,
+      rgba(255,220,130,.95) 0%,
+      rgba(255,180,70,.8) 18%,
+      rgba(220,110,40,.55) 40%,
+      transparent 70%),
+    linear-gradient(
+      180deg,
+      #f6d07c 0%,
+      #e39b4c 25%,
+      #c46a2d 55%,
+      #8b3c1a 100%
+    );
+}
+
+/* Atmospheric haze bands */
+.board-center-sky {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 120% 45% at 42% 18%, rgba(255,220,130,0.55) 0%, transparent 65%),
+    radial-gradient(ellipse 80%  30% at 75% 10%, rgba(255,200,100,0.3)  0%, transparent 60%),
+    radial-gradient(ellipse 60%  25% at 20% 8%,  rgba(255,230,160,0.25) 0%, transparent 55%);
+}
+
+/* Sun — sharp core + wide soft corona */
+.board-center-sun {
+  position: absolute; top: 6%; left: 42%;
+  transform: translateX(-50%);
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    #fffbe8 0%, #ffe080 35%, rgba(255,190,60,0.6) 60%, transparent 100%);
+  box-shadow:
+    0 0 0   3px rgba(255,220,100,0.5),
+    0 0 12px 6px rgba(255,180,50,0.35),
+    0 0 30px 14px rgba(255,150,30,0.18);
+  z-index: 3;
+}
+
+/* Dune silhouettes — layered depth */
+.board-center-dune1 {
+  position: absolute; bottom: 0; left: -8%; width: 68%; height: 30%;
+  background: radial-gradient(ellipse 85% 90% at 38% 105%,
+    rgba(140,72,20,0.92) 0%, rgba(120,55,15,0.6) 40%, transparent 70%);
+  z-index: 0;
+}
+.board-center-dune2 {
+  position: absolute; bottom: 0; right: -6%; width: 62%; height: 26%;
+  background: radial-gradient(ellipse 85% 90% at 62% 108%,
+    rgba(160,88,28,0.88) 0%, rgba(140,70,20,0.55) 42%, transparent 68%);
+  z-index: 0;
+}
+.board-center-dune3 {
+  position: absolute; bottom: 0; left: 18%; width: 64%; height: 18%;
+  background: radial-gradient(ellipse 80% 85% at 50% 110%,
+    rgba(100,48,14,0.85) 0%, rgba(90,40,10,0.5) 44%, transparent 66%);
+  z-index: 0;
+}
+/* Subtle sand texture shimmer */
+.board-center-dune1::after,
+.board-center-dune2::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 60% 30% at 50% 20%,
+    rgba(255,200,100,0.08) 0%, transparent 70%);
+}
+
+/* Center title — compact, sits above the log panel */
+.board-center-title {
+  position: relative; z-index: 4; text-align: center;
+  white-space: nowrap; flex-shrink: 0;
+  margin-bottom: 6px;
+}
+.ct-big {
+  font-family: 'Noto Serif TC', serif;
+  font-size: clamp(1.05rem, 2vw, 1.5rem);
+  font-weight: 700; line-height: 1;
+  color: #fff8ee;
+  letter-spacing: 0.08em;
+  text-shadow:
+    0 1px 0   rgba(255,255,255,0.15),
+    0 2px 8px rgba(60,20,0,0.9),
+    0 0  20px rgba(255,160,40,0.35);
+}
+.ct-exclaim { color: #ffd050; }
+
+.board-center-camels {
+  position: absolute; bottom: 6px; right: 8px;
+  font-size: 1.1rem; opacity: 0.45; z-index: 4;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.5));
+}
+.board-center-stars {
+  position: absolute; top: 4px; left: 8px;
+  font-size: 0.6rem; opacity: 0.35; z-index: 4;
+  letter-spacing: 4px; color: #ffe8a0;
+}
+
+/* ── LOG PANEL (sits inside board-center) ───── */
+.board-log-panel {
+  position: relative; z-index: 5;
+  width: 100%; flex: 1; min-height: 0;
+  background: rgba(10,5,1,0.62);
+  border: 1px solid rgba(255,225,160,0.25);
+  border-radius: 10px;
+  backdrop-filter: blur(3px);
+  padding: 8px 10px 6px;
+  display: flex; flex-direction: column;
+  box-shadow: inset 0 1px 0 rgba(255,230,170,0.12), 0 4px 16px rgba(0,0,0,0.3);
+}
+.board-log-title {
+  font-size: 0.62rem; color: var(--gold-light);
+  letter-spacing: 0.12em; margin-bottom: 5px;
+  text-transform: uppercase; opacity: 0.9; flex-shrink: 0;
+}
+.board-log-entries {
+  flex: 1; min-height: 0; overflow-y: auto;
+  scrollbar-width: thin;
+}
+.board-log-entries::-webkit-scrollbar { width: 4px; }
+.board-log-entries::-webkit-scrollbar-track { background: transparent; }
+.board-log-entries::-webkit-scrollbar-thumb { background: rgba(255,220,160,0.3); border-radius: 2px; }
+.board-log-entries .log-entry {
+  font-size: 0.66rem; color: rgba(255,235,205,0.78);
+  padding: 2px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  line-height: 1.45;
+}
+.board-log-entries .log-entry:first-child { color: #fff3da; }
+.board-log-entries .log-turn-marker {
+  font-size: 0.56rem; color: var(--gold-light);
+  opacity: 0.7; margin: 4px 0 1px;
+  letter-spacing: 0.05em;
+}
+
+/* ── SIDE PANEL ─────────────────────────────── */
+.side-panel { display: flex; flex-direction: column; gap: 12px; }
+
+/* Player cards */
+.player-card {
+  background: linear-gradient(160deg, rgba(40,18,5,0.92) 0%, rgba(28,12,3,0.96) 100%);
+  border: 1px solid rgba(201,150,58,0.2);
+  border-radius: var(--radius-md);
+  padding: 13px 15px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+.player-card.active {
+  border-color: rgba(201,150,58,0.6);
+  box-shadow: 0 0 0 1px rgba(201,150,58,0.2), 0 4px 20px rgba(0,0,0,0.4);
+}
+.player-card.finished { opacity: 0.45; filter: grayscale(0.3); }
+
+.pc-header {
+  display: flex; align-items: center; gap: 9px;
+  margin-bottom: 10px;
+}
+.pc-avatar {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem; font-weight: 700; color: white;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2);
+}
+.pc-name {
+  font-weight: 500; font-size: 0.85rem;
+  color: var(--sand);
+  flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pc-badge {
+  font-size: 0.62rem; padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--gold);
+  color: #1a0800; font-weight: 700;
+  letter-spacing: 0.04em; flex-shrink: 0;
+}
+.pc-badge.done { background: #2a8a5a; color: #dffff0; }
+
+.pc-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 5px; margin-bottom: 9px;
+}
+.stat-box {
+  background: rgba(255,200,100,0.07);
+  border: 1px solid rgba(201,150,58,0.15);
+  border-radius: 7px;
+  padding: 6px 4px; text-align: center;
+}
+.stat-val {
+  font-size: 0.85rem; font-weight: 700;
+  color: var(--sand); line-height: 1;
+}
+.stat-lbl {
+  font-size: 0.58rem; color: var(--text-muted);
+  margin-top: 3px; letter-spacing: 0.04em;
+}
+
+/* Water bar */
+.water-bar { display: flex; align-items: center; gap: 2px; }
+.water-label {
+  font-size: 0.62rem; color: var(--text-muted);
+  margin-right: 4px; flex-shrink: 0;
+}
+.water-drop {
+  flex: 1; height: 5px;
+  border-radius: 3px;
+  transition: background 0.3s;
+}
+.water-drop.full  { background: linear-gradient(90deg, #5ab0e0, #7cd0f0); }
+.water-drop.empty { background: rgba(255,255,255,0.08); }
+
+/* ── ACTION AREA ────────────────────────────── */
+.action-area {
+  background: linear-gradient(160deg, rgba(40,18,5,0.92) 0%, rgba(28,12,3,0.96) 100%);
+  border: 1px solid rgba(201,150,58,0.2);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+.action-label {
+  font-size: 0.65rem; color: var(--text-muted);
+  letter-spacing: 0.14em; margin-bottom: 10px;
+  text-transform: uppercase;
+}
+.current-turn-label {
+  font-size: 0.9rem; font-weight: 600;
+  color: var(--sand);
+  margin-bottom: 12px;
+  display: flex; align-items: center; gap: 6px;
+}
+.turn-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 6px var(--gold);
+  flex-shrink: 0;
+  animation: pulse 1.6s ease infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.7); }
+}
+
+.dice-wrap {
+  display: flex; align-items: center; justify-content: center;
+  margin: 10px 0 14px;
+  height: 60px;
+}
+.dice-display {
+  font-size: 3.2rem; line-height: 1;
+  transition: transform 0.1s;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));
+}
+@keyframes diceShake {
+  0%,100% { transform: rotate(0deg) scale(1); }
+  20%     { transform: rotate(-12deg) scale(1.1); }
+  40%     { transform: rotate(14deg) scale(1.1); }
+  60%     { transform: rotate(-8deg) scale(1.05); }
+  80%     { transform: rotate(10deg) scale(1.05); }
+}
+.dice-display.rolling { animation: diceShake 0.15s linear infinite; }
+
+.skip-msg {
+  display: none;
+  text-align: center; margin-top: 10px;
+  font-size: 0.78rem; color: #e06060;
+  background: rgba(200,50,50,0.1);
+  border: 1px solid rgba(200,50,50,0.2);
+  border-radius: 6px; padding: 7px 10px;
+  letter-spacing: 0.04em;
+}
+
+/* ── EVENT LOG (integrated into board card) ─── */
+.event-log {
+  background: rgba(8,4,1,0.92);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  padding: 14px 16px 12px;
+  max-height: 180px; overflow-y: auto;
+}
+.event-log::-webkit-scrollbar { width: 4px; }
+.event-log::-webkit-scrollbar-track { background: transparent; }
+.event-log::-webkit-scrollbar-thumb { background: rgba(201,150,58,0.25); border-radius: 2px; }
+
+.log-title {
+  font-size: 0.65rem; color: var(--gold);
+  letter-spacing: 0.14em; margin-bottom: 9px;
+  text-transform: uppercase; opacity: 0.8;
+}
+.log-entry {
+  font-size: 0.75rem; color: rgba(240,215,170,0.72);
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  line-height: 1.55;
+}
+.log-entry:first-child { color: rgba(240,215,170,0.95); }
+.log-turn-marker {
+  font-size: 0.62rem; color: var(--gold);
+  opacity: 0.55; margin: 5px 0 2px;
+  letter-spacing: 0.06em;
+}
+
+/* ── MODAL ──────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(5,2,0,0.88);
+  backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200; padding: 20px;
+}
+.modal-box {
+  background: linear-gradient(160deg, #2a1206 0%, #1c0904 100%);
+  border: 1px solid rgba(201,150,58,0.35);
+  border-radius: var(--radius-lg);
+  padding: 32px 34px;
+  max-width: 400px; width: 100%; text-align: center;
+  box-shadow: var(--shadow-lift), inset 0 1px 0 rgba(255,200,80,0.08);
+  animation: modalIn 0.25s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.88) translateY(12px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.modal-box h3 {
+  font-family: 'Noto Serif TC', serif;
+  font-size: 1.25rem; color: var(--gold-light);
+  margin-bottom: 10px; letter-spacing: 0.06em;
+}
+.modal-box p {
+  font-size: 0.85rem; color: rgba(230,200,150,0.75);
+  line-height: 1.75; margin-bottom: 14px;
+}
+.modal-divider {
+  height: 1px; margin: 14px 0;
+  background: linear-gradient(90deg, transparent, rgba(201,150,58,0.3), transparent);
+}
+
+/* RPS */
+.rps-choices {
+  display: flex; justify-content: center; gap: 12px;
+  margin: 18px 0;
+}
+.rps-btn {
+  width: 68px; height: 68px;
+  border-radius: 14px;
+  border: 1.5px solid rgba(201,150,58,0.3);
+  background: rgba(255,220,120,0.07);
+  cursor: pointer; font-size: 1.7rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s cubic-bezier(.4,0,.2,1);
+  color: white;
+}
+.rps-btn:hover {
+  border-color: var(--gold);
+  background: rgba(201,150,58,0.18);
+  transform: translateY(-3px) scale(1.06);
+  box-shadow: 0 6px 20px rgba(180,120,10,0.35);
+}
+.rps-btn:active { transform: translateY(0) scale(0.97); }
+
+/* Bandit */
+.bandit-list { text-align: left; margin: 14px 0; }
+.bandit-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(201,150,58,0.2);
+  background: rgba(255,220,120,0.05);
+  margin-bottom: 8px; cursor: pointer;
+  transition: all 0.15s; color: var(--sand);
+  font-size: 0.85rem;
+}
+.bandit-item:hover {
+  border-color: #d06060;
+  background: rgba(200,60,60,0.12);
+  transform: translateX(2px);
+}
+
+/* Score table */
+.score-table {
+  width: 100%; border-collapse: collapse;
+  margin: 14px 0; font-size: 0.82rem;
+}
+.score-table th {
+  padding: 8px 6px;
+  border-bottom: 1px solid rgba(201,150,58,0.3);
+  color: var(--text-muted); font-weight: 500;
+  letter-spacing: 0.06em; font-size: 0.72rem;
+}
+.score-table td {
+  padding: 10px 6px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  color: rgba(230,200,150,0.8);
+}
+.rank-1 td { color: var(--gold-light); font-weight: 600; }
+.rank-2 td { color: rgba(210,210,210,0.8); }
+.rank-3 td { color: rgba(200,140,80,0.8); }
+
+.winner-line {
+  margin: 14px 0 18px;
+  font-family: 'Noto Serif TC', serif;
+  font-size: 0.95rem; color: var(--gold-light);
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 20px rgba(200,160,50,0.4);
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ── SETUP ── -->
+  <div id="setup-screen">
+    <div class="hero">
+      <div class="hero-eyebrow">🏜️ Desert Adventure 🏜️</div>
+      <h1 class="hero-title">沙漠探險</h1>
+      <div class="hero-subtitle">DESERT ADVENTURE</div>
+    </div>
+    <div class="divider"></div>
+    <p class="game-desc">
+      在無盡沙漠中，埋藏著無數珍貴的寶石 💎。<br>
+      化身勇敢探險者，穿越炙熱沙地、與神秘商人交易 💰，<br>
+      甚至與其他探險者展開一場猜拳決鬥。<br>
+      最終擁有最多財富者，將成為傳說中的——「沙漠探險之王」。
+    </p>
+    <div class="setup-card">
+      <div class="setup-card-title">🗺️ 開始冒險</div>
+      <div class="form-row">
+        <label>玩家人數</label>
+        <select id="player-count" onchange="updatePlayerInputs()">
+          <option value="2">2 人</option>
+          <option value="3">3 人</option>
+          <option value="4">4 人</option>
+        </select>
+      </div>
+      <div class="player-inputs" id="player-inputs"></div>
+      <button class="btn btn-primary" style="width:100%;margin-top:6px;padding:13px" onclick="startGame()">
+        出發探險 →
+      </button>
+    </div>
+  </div>
+
+  <!-- ── GAME ── -->
+  <div id="game-screen">
+    <div class="game-header">
+      <span class="title">🏜️ 沙漠探險</span>
+      <span class="round-badge" id="round-info">第 1 回合</span>
+    </div>
+    <div class="game-layout">
+      <div>
+        <div class="board-wrap">
+          <div class="board-grid" id="board-grid"></div>
+        </div>
+      </div>
+      <div class="side-panel">
+        <div id="player-cards"></div>
+        <div class="action-area">
+          <div class="action-label">回合操作</div>
+          <div class="current-turn-label" id="current-turn-label">
+            <div class="turn-dot"></div>
+            <span>— 的回合</span>
+          </div>
+          <div class="dice-wrap">
+            <div class="dice-display" id="dice-display">🎲</div>
+          </div>
+          <button class="btn-dice" id="roll-btn" onclick="rollDice()">擲骰子</button>
+          <div class="skip-msg" id="skip-msg">💀 缺水！跳過本回合</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── MODAL ── -->
+<div class="modal-overlay" id="modal" style="display:none">
+  <div class="modal-box" id="modal-box"></div>
+</div>
+
+<script>
+const BOARD = [
+  {kind:"oasis",   name:"綠洲",    emoji:"🌴"},
+  {kind:"bandit",  name:"沙匪",    emoji:"🗡️"},
+  {kind:"blank",   name:"沙地",    emoji:"🏜"},
+  {kind:"dune",    name:"沙丘",    emoji:"⛰️"},
+  {kind:"blank",   name:"沙地",    emoji:"🏜"},
+  {kind:"path",    name:"小徑",    emoji:"🌬️"},
+  {kind:"mirage",  name:"海市蜃樓",emoji:"✨"},
+  {kind:"merchant",name:"商人",    emoji:"💰"},
+  {kind:"dune",    name:"沙丘",    emoji:"⛰️"},
+  {kind:"oil",     name:"石油",    emoji:"🛢️"},
+  {kind:"blank",   name:"沙地",    emoji:"🏜"},
+  {kind:"dune",    name:"沙丘",    emoji:"⛰️"},
+  {kind:"blank",   name:"沙地",    emoji:"🏜"},
+  {kind:"bandit",  name:"沙匪",    emoji:"🗡️"},
+  {kind:"blank",   name:"沙地",    emoji:"🏜"},
+  {kind:"merchant",name:"商人",    emoji:"💰"},
+  {kind:"blank",   name:"沙地",    emoji:"🏜"},
+  {kind:"path",    name:"小徑",    emoji:"🌬️"},
+  {kind:"oil",     name:"石油",    emoji:"🛢️"},
+  {kind:"mirage",  name:"海市蜃樓",emoji:"✨"},
+  {kind:"bandit",  name:"沙匪",    emoji:"🗡️"},
+  {kind:"blank",   name:"沙地",    emoji:"🏜"},
+  {kind:"dune",    name:"沙丘",    emoji:"⛰️"},
+  {kind:"oasis",   name:"終點",    emoji:"🏁"},
+];
+const TOTAL = BOARD.length;
+
+const AVATARS = ["#c0392b","#2471a3","#1e8449","#7d3c98"];
+const TOKENS  = ["🔴","🔵","🟢","🟣"];
+const PLAYER_NAMES_DEFAULT = ["探險者甲","探險者乙","探險者丙","探險者丁"];
+
+// Grid positions [col, row] — 8×6 monopoly ring
+const RING_POSITIONS = [
+  [1,1],[2,1],[3,1],[4,1],[5,1],[6,1],[7,1],[8,1],
+  [8,2],[8,3],[8,4],[8,5],
+  [8,6],[7,6],[6,6],[5,6],[4,6],[3,6],[2,6],[1,6],
+  [1,5],[1,4],[1,3],[1,2],
+];
+
+let G = {
+  players: [], current: 0, round: 1,
+  finishOrder: 0, phase: "roll", _skipTimer: null,
+};
+
+// ── SETUP ────────────────────────────────────
+function updatePlayerInputs() {
+  const n = parseInt(document.getElementById("player-count").value);
+  const c = document.getElementById("player-inputs");
+  c.innerHTML = "";
+  for (let i = 0; i < n; i++) {
+    c.innerHTML += `
+      <div class="player-row">
+        <div class="player-avatar" style="background:${AVATARS[i]}">${TOKENS[i]}</div>
+        <input type="text" placeholder="玩家 ${i+1} 名字" id="pname-${i}" value="${PLAYER_NAMES_DEFAULT[i]}">
+      </div>`;
+  }
+}
+updatePlayerInputs();
+
+function startGame() {
+  const n = parseInt(document.getElementById("player-count").value);
+  G.players = [];
+  for (let i = 0; i < n; i++) {
+    const raw = document.getElementById(`pname-${i}`).value.trim();
+    G.players.push({ name: raw || PLAYER_NAMES_DEFAULT[i], coins:50, gems:2, water:4,
+                     pos:0, finished:false, finishOrder:null, color:AVATARS[i], token:TOKENS[i] });
+  }
+  G.current = 0; G.round = 1; G.finishOrder = 0;
+  document.getElementById("setup-screen").style.display = "none";
+  document.getElementById("game-screen").style.display = "block";
+  renderBoard(); renderPlayers(); updateTurnLabel();
+  addLog("🏜️ 探險開始！共 " + n + " 位探險者出發！");
+}
+
+// ── RENDER ───────────────────────────────────
+function renderBoard() {
+  const grid = document.getElementById("board-grid");
+  const existingLog = document.getElementById("log-entries");
+  const savedLogHTML = existingLog ? existingLog.innerHTML : "";
+  grid.innerHTML = "";
+
+  RING_POSITIONS.forEach(([col, row], idx) => {
+    if (idx >= TOTAL) return;
+    const cell = BOARD[idx];
+    const playersHere = G.players.filter(p => p.pos === idx && !p.finished);
+    const isActive = idx === G.players[G.current]?.pos && !G.players[G.current]?.finished;
+    const isLeft  = col === 1 && row >= 2 && row <= 5;
+    const isRight = col === 8 && row >= 2 && row <= 5;
+
+    const div = document.createElement("div");
+    div.className = `cell ct-${cell.kind}${isActive ? " active-cell" : ""}`;
+    div.id = `cell-${idx}`;
+    div.style.gridColumn = col;
+    div.style.gridRow = row;
+
+    const nameClass = isLeft ? "cell-name cell-side-left" : isRight ? "cell-name cell-side-right" : "cell-name";
+    const emojiSz   = (isLeft || isRight) ? "1rem" : "1.25rem";
+
+    div.innerHTML = `
+      <div class="cell-num">${idx}</div>
+      <div class="cell-emoji" style="font-size:${emojiSz}">${cell.emoji}</div>
+      <div class="${nameClass}">${cell.name}</div>
+      <div class="cell-players">
+        ${playersHere.map(p=>`<div class="cell-player-dot" style="background:${p.color}" title="${p.name}">${p.token}</div>`).join("")}
+      </div>`;
+    grid.appendChild(div);
+  });
+
+  // Center
+  const c = document.createElement("div");
+  c.className = "board-center";
+  c.style.gridColumn = "2 / 8";
+  c.style.gridRow    = "2 / 6";
+  c.innerHTML = `
+    <div class="board-center-bg"></div>
+    <div class="board-center-sky"></div>
+    <div class="board-center-sun"></div>
+    <div class="board-center-dune1"></div>
+    <div class="board-center-dune2"></div>
+    <div class="board-center-dune3"></div>
+    <div class="board-center-title">
+      <div class="ct-big">沙漠探險<span class="ct-exclaim">！</span></div>
+    </div>
+    <div class="board-log-panel">
+      <div class="board-log-title">📜 探險日誌</div>
+      <div class="board-log-entries" id="log-entries"></div>
+    </div>
+    <div class="board-center-camels">🐪</div>
+    <div class="board-center-stars">✦ ✦ ✦</div>`;
+  grid.appendChild(c);
+
+  // 還原日誌內容（因為整個 board-grid 每次都會重建）
+  const newLog = document.getElementById("log-entries");
+  if (newLog && savedLogHTML) newLog.innerHTML = savedLogHTML;
+}
+
+function renderPlayers() {
+  const cont = document.getElementById("player-cards");
+  cont.innerHTML = "";
+  G.players.forEach((p, i) => {
+    const isActive = i === G.current && !p.finished;
+    cont.innerHTML += `
+      <div class="player-card${isActive?" active":""}${p.finished?" finished":""}">
+        <div class="pc-header">
+          <div class="pc-avatar" style="background:${p.color}">${p.token}</div>
+          <span class="pc-name">${p.name}</span>
+          ${isActive ? '<span class="pc-badge">本回合</span>' : ""}
+          ${p.finished ? '<span class="pc-badge done">完成</span>' : ""}
+        </div>
+        <div class="pc-stats">
+          <div class="stat-box"><div class="stat-val">💰 ${p.coins}</div><div class="stat-lbl">金幣</div></div>
+          <div class="stat-box"><div class="stat-val">💎 ${p.gems}</div><div class="stat-lbl">寶藏</div></div>
+          <div class="stat-box"><div class="stat-val">📍 ${p.pos}</div><div class="stat-lbl">位置</div></div>
+        </div>
+        <div class="water-bar">
+          <span class="water-label">💧</span>
+          ${Array.from({length:8},(_,j)=>`<div class="water-drop ${j<p.water?"full":"empty"}"></div>`).join("")}
+        </div>
+      </div>`;
+  });
+}
+
+function updateTurnLabel() {
+  const p = G.players[G.current];
+  const lbl = document.getElementById("current-turn-label");
+  lbl.innerHTML = `<div class="turn-dot"></div><span>${p.token} ${p.name} 的回合</span>`;
+  document.getElementById("round-info").textContent = `第 ${G.round} 回合`;
+  const skip = document.getElementById("skip-msg");
+  const btn  = document.getElementById("roll-btn");
+  if (p.water <= 0 && !p.finished) {
+    p.water = Math.min(8, p.water + 2); renderAll();
+    skip.style.display = "block"; btn.disabled = true;
+    addLog("💀 " + p.name + " 缺水，跳過本回合並恢復 2 滴水！");
+    G._skipTimer = setTimeout(() => { skip.style.display="none"; nextTurn(); }, 1500);
+  } else {
+    skip.style.display = "none"; btn.disabled = p.finished;
+  }
+}
+
+function addLog(msg, marker) {
+  const c = document.getElementById("log-entries");
+  if (marker) { const m=document.createElement("div"); m.className="log-turn-marker"; m.textContent=marker; c.prepend(m); }
+  const el = document.createElement("div"); el.className="log-entry"; el.textContent=msg; c.prepend(el);
+}
+
+// ── DICE ─────────────────────────────────────
+function rollDice() {
+  const p = G.players[G.current];
+  if (p.finished) return;
+  document.getElementById("roll-btn").disabled = true;
+  const d = document.getElementById("dice-display");
+  const faces = ["⚀","⚁","⚂","⚃","⚄","⚅"];
+  d.classList.add("rolling");
+  let t = 0;
+  const anim = setInterval(() => {
+    d.textContent = faces[Math.floor(Math.random()*6)]; t++;
+    if (t > 12) {
+      clearInterval(anim); d.classList.remove("rolling");
+      const r = Math.floor(Math.random()*6)+1;
+      d.textContent = faces[r-1];
+      setTimeout(() => processMove(r), 320);
+    }
+  }, 75);
+}
+
+function processMove(steps) {
+  const pi = G.current, p = G.players[pi];
+  addLog("", "🎲 " + p.name + " 擲出 " + steps);
+  addLog("📍 從格" + p.pos + " 前進 " + steps + " 格");
+  let np = p.pos + steps;
+  if (np >= TOTAL - 1) {
+    np = TOTAL - 1; p.pos = np; p.finished = true;
+    G.finishOrder++; p.finishOrder = G.finishOrder;
+    addLog("🎉 " + p.name + " 抵達終點！（第 " + G.finishOrder + " 名）");
+    renderAll(); checkGameEnd(); return;
+  }
+  p.pos = np; renderAll();
+  addLog("📌 落在格" + np + "【" + BOARD[np].name + "】");
+  handleCellEvent(np, pi, () => {
+    // 只有到達沙丘才扣水，經過其他格子不扣水
+    const rivals = G.players.filter((o,oi)=>oi!==pi&&o.pos===p.pos&&!o.finished&&BOARD[p.pos].kind==="blank");
+    if (rivals.length > 0) {
+      showRPSQueue(p, rivals, pi, 0, ()=>{ renderAll(); nextTurn(); });
+    } else { renderAll(); nextTurn(); }
+  });
+}
+
+function handleCellEvent(idx, pi, cb) {
+  const p = G.players[pi], cell = BOARD[idx];
+  if (cell.kind==="dune") {
+    p.water=Math.max(0,p.water-2); addLog("⛰️ 沙丘消耗 2 滴水（剩餘 "+p.water+"）"); renderAll(); cb();
+  } else if (cell.kind==="mirage") {
+    const np=Math.max(0,p.pos-2); addLog("✨ 海市蜃樓！退後 2 格 → 格"+np); p.pos=np; renderAll();
+    if (BOARD[np].kind!=="mirage"&&BOARD[np].kind!=="oasis") handleCellEvent(np,pi,cb); else cb();
+  } else if (cell.kind==="path") {
+    const np=Math.min(p.pos+2,TOTAL-1); addLog("🌬️ 小徑！前進 2 格 → 格"+np); p.pos=np; renderAll(); cb();
+  } else if (cell.kind==="oil") {
+    p.gems++; addLog("🛢️ 發現石油！寶藏 +1（現有 "+p.gems+"）"); renderAll(); cb();
+  } else if (cell.kind==="merchant") {
+    p.coins+=5; addLog("💰 商人！金幣 +5（現有 "+p.coins+"）"); renderAll(); cb();
+  } else if (cell.kind==="bandit") {
+    const valid=G.players.filter((o,oi)=>oi!==pi&&!o.finished);
+    if (valid.length>0) showBandit(p,valid,pi,cb);
+    else { addLog("🗡️ 遇到沙匪，沒有其他目標！"); cb(); }
+  } else { cb(); }
+}
+
+// ── BANDIT ───────────────────────────────────
+function showBandit(attacker, targets, pi, cb) {
+  document.getElementById("modal-box").innerHTML = `
+    <h3>🗡️ 遇到沙匪！</h3>
+    <p>${attacker.name} 指定一名玩家扣 10 金幣！</p>
+    <div class="modal-divider"></div>
+    <div class="bandit-list">
+      ${targets.map(t=>`
+        <div class="bandit-item" onclick="executeBandit(${G.players.indexOf(t)},${pi})">
+          <span>${t.token} ${t.name}</span>
+          <span style="color:var(--gold)">💰 ${t.coins}</span>
+        </div>`).join("")}
+    </div>`;
+  document.getElementById("modal").style.display = "flex";
+  window._banditCb = cb;
+}
+function executeBandit(ti, ai) {
+  const t=G.players[ti], stolen=Math.min(10,t.coins);
+  t.coins-=stolen;
+  addLog("🗡️ 沙匪！" + t.name + " 損失 " + stolen + " 金幣！");
+  closeModal(); renderAll(); if(window._banditCb) window._banditCb();
+}
+
+// ── RPS ──────────────────────────────────────
+let _rps = {};
+
+// 依序與多位同格對手猜拳：queue 是對手陣列，idx 是目前打到第幾位
+function showRPSQueue(atk, queue, ai, idx, finalCb) {
+  if (idx >= queue.length || atk.finished) { finalCb(); return; }
+  const def = queue[idx];
+  // 防呆：若該對手已在前面的對戰中離開原地（例如輸光寶物後仍同格，理論上位置不變，
+  // 但保留檢查避免對手中途已 finished 或已不在同格時還硬要猜拳）
+  if (def.finished || def.pos !== atk.pos) {
+    showRPSQueue(atk, queue, ai, idx + 1, finalCb);
+    return;
+  }
+  showRPS(atk, def, ai, () => {
+    renderAll();
+    showRPSQueue(atk, queue, ai, idx + 1, finalCb);
+  }, idx, queue.length);
+}
+
+function showRPS(atk, def, ai, cb, queueIdx, queueLen) {
+  _rps = {atk, def, ai, cb, atkChoice: null, queueIdx: queueIdx||0, queueLen: queueLen||1};
+  _rpsStep(1);
+  document.getElementById("modal").style.display = "flex";
+}
+function _rpsStep(step) {
+  const {atk, def, queueIdx, queueLen} = _rps;
+  const who = step === 1 ? atk : def;
+  const tag = queueLen > 1 ? `<p style="font-size:0.72rem;opacity:0.55;margin-bottom:4px">對手 ${queueIdx+1}/${queueLen}</p>` : "";
+  document.getElementById("modal-box").innerHTML = `
+    <h3>⚔️ 相遇！猜拳決鬥</h3>
+    ${tag}
+    <p>${atk.name} vs ${def.name}</p>
+    <p style="font-size:0.85rem;font-weight:600;margin-bottom:8px">${who.name} 出拳</p>
+    <div class="rps-choices">
+      <div class="rps-btn" onclick="rpsChoose('rock',${step})"    title="石頭">✊</div>
+      <div class="rps-btn" onclick="rpsChoose('paper',${step})"   title="布">✋</div>
+      <div class="rps-btn" onclick="rpsChoose('scissors',${step})"title="剪刀">✌️</div>
+    </div>
+    <p style="font-size:0.75rem;opacity:0.6">選擇出拳</p>`;
+}
+function rpsChoose(choice, step) {
+  const em={rock:"✊",paper:"✋",scissors:"✌️"};
+  const wins={rock:"scissors",paper:"rock",scissors:"paper"};
+  const {atk,def,ai,cb,queueIdx,queueLen}=_rps;
+  if (step === 1) {
+    _rps.atkChoice = choice;
+    document.getElementById("modal-box").innerHTML = `
+      <h3>⚔️ 相遇！猜拳決鬥</h3>
+      <p>${atk.name} vs ${def.name}</p>
+      <p style="font-size:0.85rem;opacity:0.7">${atk.name} 已出拳，換 ${def.name}</p>
+      <p style="font-size:2rem;margin:8px 0">🤜</p>
+      <p style="font-size:0.75rem;opacity:0.5">（已隱藏）</p>`;
+    setTimeout(() => _rpsStep(2), 800);
+  } else {
+    const pc=_rps.atkChoice, cc=choice;
+    if (pc===cc) {
+      document.getElementById("modal-box").innerHTML+=`<p style="color:#e06060;font-weight:600">平手！再來一次…</p>`;
+      setTimeout(()=>showRPS(atk,def,ai,cb,queueIdx,queueLen),900); return;
+    }
+    const won=wins[pc]===cc;
+    let detail="";
+    if (won) {
+      if(def.gems>0){def.gems--;atk.gems++;detail=atk.name+" 獲得 "+def.name+" 的寶藏 💎";}
+      else{const s=Math.min(3,def.coins);def.coins-=s;atk.coins+=s;detail=atk.name+" 獲得 "+s+" 金幣";}
+    } else {
+      if(atk.gems>0){atk.gems--;def.gems++;detail=atk.name+" 失去一顆寶藏給 "+def.name;}
+      else{const s=Math.min(3,atk.coins);atk.coins-=s;def.coins+=s;detail=atk.name+" 失去 "+s+" 金幣";}
+    }
+    addLog("⚔️ " + detail);
+    document.getElementById("modal-box").innerHTML = `
+      <h3>⚔️ 猜拳結果</h3>
+      <p style="font-size:1.6rem;margin:10px 0">${em[pc]} vs ${em[cc]}</p>
+      <p style="font-size:0.8rem;opacity:0.7">${atk.name} vs ${def.name}</p>
+      <p style="font-size:1.1rem;font-weight:700;color:${won?"#80d890":"#e06060"}">${won?"✅ "+atk.name+" 贏了！":"❌ "+def.name+" 贏了！"}</p>
+      <div class="modal-divider"></div>
+      <p>${detail}</p>
+      <button class="btn btn-primary" style="margin-top:16px;width:100%" onclick="rpsClose()">繼續</button>`;
+    window._rpsCb = cb;
+  }
+}
+function rpsClose() { closeModal(); if(window._rpsCb) window._rpsCb(); }
+
+function closeModal() { document.getElementById("modal").style.display="none"; }
+
+// ── TURNS ────────────────────────────────────
+function nextTurn() {
+  const n=G.players.length;
+  let nx=(G.current+1)%n, tries=0;
+  while(G.players[nx].finished&&tries<n){nx=(nx+1)%n;tries++;}
+  if(nx<=G.current) G.round++;
+  G.current=nx;
+  document.getElementById("dice-display").textContent="🎲";
+  renderAll(); updateTurnLabel(); checkGameEnd();
+}
+
+function checkGameEnd() {
+  const anyFinished=G.players.some(p=>p.finished);
+  if(anyFinished) setTimeout(()=>showFinalScore(false),700);
+}
+
+function score(p){ return p.gems*9+p.coins*3+p.water; }
+
+function showFinalScore(dry) {
+  const ranked=[...G.players].sort((a,b)=>score(b)-score(a)||((a.finishOrder||99)-(b.finishOrder||99)));
+  const ri=(i)=>i===0?"rank-1":i===1?"rank-2":i===2?"rank-3":"";
+  const re=(i)=>i===0?"🥇":i===1?"🥈":i===2?"🥉":"";
+  document.getElementById("modal-box").innerHTML=`
+    <h3>🏆 探險結束！</h3>
+    ${dry?'<p style="color:#e06060">所有探險者都脫水了！</p>':'<p>最終計分</p>'}
+    <div class="modal-divider"></div>
+    <table class="score-table">
+      <thead><tr><th>名次</th><th>探險者</th><th>💎×9</th><th>💰×3</th><th>💧×1</th><th>總分</th></tr></thead>
+      <tbody>
+        ${ranked.map((p,i)=>`<tr class="${ri(i)}"><td>${re(i)} ${i+1}</td><td>${p.token} ${p.name}</td><td>${p.gems*9}</td><td>${p.coins*3}</td><td>${p.water}</td><td><strong>${score(p)}</strong></td></tr>`).join("")}
+      </tbody>
+    </table>
+    <div class="winner-line">★ ${ranked[0].name} 成為沙漠探險之王！★</div>
+    <button class="btn btn-primary" style="width:100%" onclick="restartGame()">再玩一次</button>`;
+  document.getElementById("modal").style.display="flex";
+}
+
+function restartGame() {
+  clearTimeout(G._skipTimer);
+  G={players:[],current:0,round:1,finishOrder:0,phase:"roll",_skipTimer:null};
+  closeModal();
+  document.getElementById("game-screen").style.display="none";
+  document.getElementById("setup-screen").style.display="flex";
+  document.getElementById("log-entries").innerHTML="";
+}
+
+function renderAll(){ renderBoard(); renderPlayers(); }
+</script>
+</body>
+</html>
